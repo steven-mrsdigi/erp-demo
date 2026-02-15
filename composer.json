@@ -1,0 +1,8 @@
+{
+  "name": "steven/erp-demo",
+  "description": "ERP Demo System",
+  "type": "project",
+  "require": {
+    "php": ">=8.0"
+  }
+}

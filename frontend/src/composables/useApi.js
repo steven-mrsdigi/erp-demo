@@ -1,7 +1,7 @@
 import { ref } from 'vue'
 
-const API_URL = 'http://localhost:8080/api' // 本地開發用
-// const API_URL = 'https://your-railway-app.up.railway.app/api' // 部署後用
+// const API_URL = 'http://localhost:8080/api' // 本地開發用
+const API_URL = 'https://erp-demo-production.up.railway.app/api' // 部署後用
 
 export function useApi() {
   const loading = ref(false)
