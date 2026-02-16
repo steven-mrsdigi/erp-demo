@@ -7,8 +7,8 @@ function handleInventory($method, $input) {
             // Get recent movements
             $movements = supabaseRequest('inventory_movements', 'GET', null, 'order=created_at.desc&limit=50');
             
-            // Get current stock from products
-            $products = supabaseRequest('products', 'GET', null, 'select=id,name,sku,stock_quantity&status=eq.active&order=name.asc');
+            // Get current stock from products (using onhand_qty as the real stock)
+            $products = supabaseRequest('products', 'GET', null, 'select=id,name,sku,onhand_qty,allocated_qty,available_qty&status=eq.active&order=name.asc');
             
             // Calculate totals for each product
             $stockData = [];
@@ -17,7 +17,9 @@ function handleInventory($method, $input) {
                     'id' => $product['id'],
                     'name' => $product['name'],
                     'sku' => $product['sku'],
-                    'stock_quantity' => $product['stock_quantity'],
+                    'stock_quantity' => $product['onhand_qty'] ?? 0,
+                    'allocated_qty' => $product['allocated_qty'] ?? 0,
+                    'available_qty' => $product['available_qty'] ?? 0,
                     'total_in' => 0,
                     'total_out' => 0
                 ];

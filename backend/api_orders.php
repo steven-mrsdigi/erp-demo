@@ -65,7 +65,8 @@ function handleOrders($method, $input) {
                     $available = $onhand - $allocated;
                     supabaseRequest('products', 'PATCH', [
                         'allocated_qty' => $allocated,
-                        'available_qty' => $available
+                        'available_qty' => $available,
+                        'stock_quantity' => $onhand  // Keep stock_quantity in sync with onhand_qty
                     ], 'id=eq.' . $item['product_id']);
                 }
                 
@@ -126,7 +127,8 @@ function handlePayment($input) {
         supabaseRequest('products', 'PATCH', [
             'onhand_qty' => $newOnhand,
             'allocated_qty' => $newAllocated,
-            'available_qty' => $newAvailable
+            'available_qty' => $newAvailable,
+            'stock_quantity' => $newOnhand  // Keep stock_quantity in sync
         ], 'id=eq.' . $productId);
     }
     
@@ -162,7 +164,8 @@ function handleOrderUpdate($input) {
         $newAvailable = $onhand - $newAllocated;
         supabaseRequest('products', 'PATCH', [
             'allocated_qty' => $newAllocated,
-            'available_qty' => $newAvailable
+            'available_qty' => $newAvailable,
+            'stock_quantity' => $onhand  // Keep stock_quantity in sync
         ], 'id=eq.' . $oldItem['product_id']);
     }
     
@@ -187,7 +190,8 @@ function handleOrderUpdate($input) {
         $newAvailable = $onhand - $newAllocated;
         supabaseRequest('products', 'PATCH', [
             'allocated_qty' => $newAllocated,
-            'available_qty' => $newAvailable
+            'available_qty' => $newAvailable,
+            'stock_quantity' => $onhand  // Keep stock_quantity in sync
         ], 'id=eq.' . $item['product_id']);
     }
     
@@ -243,7 +247,8 @@ function handleOrderCancellation($input) {
             $newAvailable = $newOnhand - $allocated;
             supabaseRequest('products', 'PATCH', [
                 'onhand_qty' => $newOnhand,
-                'available_qty' => $newAvailable
+                'available_qty' => $newAvailable,
+                'stock_quantity' => $newOnhand  // Keep stock_quantity in sync
             ], 'id=eq.' . $productId);
         } else {
             // If not paid, just release allocation
@@ -251,7 +256,8 @@ function handleOrderCancellation($input) {
             $newAvailable = $onhand - $newAllocated;
             supabaseRequest('products', 'PATCH', [
                 'allocated_qty' => $newAllocated,
-                'available_qty' => $newAvailable
+                'available_qty' => $newAvailable,
+                'stock_quantity' => $onhand  // Keep stock_quantity in sync
             ], 'id=eq.' . $productId);
         }
     }
