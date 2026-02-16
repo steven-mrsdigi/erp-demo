@@ -34,10 +34,26 @@ function handleOrders($method, $input) {
                 }
             }
             
+            // Calculate tax for each item
+            $subtotal = 0;
+            $totalTax = 0;
+            foreach ($input['items'] as $item) {
+                $product = supabaseRequest('products', 'GET', null, 'id=eq.' . $item['product_id'] . '&select=price,tax_rate');
+                $price = $product['data'][0]['price'] ?? $item['unit_price'];
+                $taxRate = $product['data'][0]['tax_rate'] ?? 0;
+                $itemSubtotal = $price * $item['quantity'];
+                $itemTax = $itemSubtotal * ($taxRate / 100);
+                $subtotal += $itemSubtotal;
+                $totalTax += $itemTax;
+            }
+            $totalAmount = $subtotal + $totalTax;
+            
             $orderData = [
                 'order_number' => 'ORD-' . date('Ymd') . '-' . strtoupper(substr(uniqid(), -6)),
                 'customer_id' => $input['customer_id'],
-                'total_amount' => $input['total_amount'] ?? 0,
+                'subtotal' => $subtotal,
+                'tax_amount' => $totalTax,
+                'total_amount' => $totalAmount,
                 'status' => 'pending',
                 'payment_status' => 'unpaid'
             ];
@@ -49,12 +65,22 @@ function handleOrders($method, $input) {
                 
                 // Create order items and allocate inventory
                 foreach ($input['items'] as $item) {
+                    $product = supabaseRequest('products', 'GET', null, 'id=eq.' . $item['product_id'] . '&select=price,tax_rate');
+                    $price = $product['data'][0]['price'] ?? $item['unit_price'];
+                    $taxRate = $product['data'][0]['tax_rate'] ?? 0;
+                    $itemSubtotal = $price * $item['quantity'];
+                    $itemTax = $itemSubtotal * ($taxRate / 100);
+                    $itemTotal = $itemSubtotal + $itemTax;
+                    
                     $itemData = [
                         'order_id' => $orderId,
                         'product_id' => $item['product_id'],
                         'quantity' => $item['quantity'],
-                        'unit_price' => $item['unit_price'],
-                        'total_price' => $item['quantity'] * $item['unit_price']
+                        'unit_price' => $price,
+                        'tax_rate' => $taxRate,
+                        'subtotal' => $itemSubtotal,
+                        'tax_amount' => $itemTax,
+                        'total_price' => $itemTotal
                     ];
                     supabaseRequest('order_items', 'POST', $itemData);
                     
@@ -172,20 +198,36 @@ function handleOrderUpdate($input) {
     // Delete old items
     supabaseRequest('order_items', 'DELETE', null, 'order_id=eq.' . $orderId);
     
+    // Calculate tax for new items
+    $subtotal = 0;
+    $totalTax = 0;
+    
     // Add new items with new allocations
     foreach ($input['items'] as $item) {
+        $product = supabaseRequest('products', 'GET', null, 'id=eq.' . $item['product_id'] . '&select=price,tax_rate,onhand_qty,allocated_qty');
+        $price = $product['data'][0]['price'] ?? $item['unit_price'];
+        $taxRate = $product['data'][0]['tax_rate'] ?? 0;
+        $onhand = $product['data'][0]['onhand_qty'] ?? 0;
+        
+        $itemSubtotal = $price * $item['quantity'];
+        $itemTax = $itemSubtotal * ($taxRate / 100);
+        $itemTotal = $itemSubtotal + $itemTax;
+        $subtotal += $itemSubtotal;
+        $totalTax += $itemTax;
+        
         $itemData = [
             'order_id' => $orderId,
             'product_id' => $item['product_id'],
             'quantity' => $item['quantity'],
-            'unit_price' => $item['unit_price'],
-            'total_price' => $item['quantity'] * $item['unit_price']
+            'unit_price' => $price,
+            'tax_rate' => $taxRate,
+            'subtotal' => $itemSubtotal,
+            'tax_amount' => $itemTax,
+            'total_price' => $itemTotal
         ];
         supabaseRequest('order_items', 'POST', $itemData);
         
         // Allocate new quantity
-        $product = supabaseRequest('products', 'GET', null, 'id=eq.' . $item['product_id'] . '&select=onhand_qty,allocated_qty');
-        $onhand = $product['data'][0]['onhand_qty'] ?? 0;
         $newAllocated = ($product['data'][0]['allocated_qty'] ?? 0) + $item['quantity'];
         $newAvailable = $onhand - $newAllocated;
         supabaseRequest('products', 'PATCH', [
@@ -195,9 +237,13 @@ function handleOrderUpdate($input) {
         ], 'id=eq.' . $item['product_id']);
     }
     
-    // Update order total
+    $totalAmount = $subtotal + $totalTax;
+    
+    // Update order total with tax
     supabaseRequest('orders', 'PATCH', [
-        'total_amount' => $input['total_amount'],
+        'subtotal' => $subtotal,
+        'tax_amount' => $totalTax,
+        'total_amount' => $totalAmount,
         'notes' => $input['notes'] ?? ''
     ], 'id=eq.' . $orderId);
     
