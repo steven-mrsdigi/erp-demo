@@ -67,6 +67,7 @@ require_once __DIR__ . '/api_customers.php';
 require_once __DIR__ . '/api_vendors.php';
 require_once __DIR__ . '/api_inventory.php';
 require_once __DIR__ . '/api_reports.php';
+require_once __DIR__ . '/api_orders.php';
 
 // Router
 $request_uri = $_SERVER['REQUEST_URI'];
@@ -149,5 +150,5 @@ function handleProducts($method, $input) {
     }
 }
 
-// handleCustomers, handleOrders, handleVendors, handleInventory, handleReports
-// are defined in their respective modular API files
+// All API handlers are defined in their respective modular files:
+// api_customers.php, api_vendors.php, api_inventory.php, api_reports.php, api_orders.php
