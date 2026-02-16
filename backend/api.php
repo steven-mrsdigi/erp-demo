@@ -1,6 +1,13 @@
 <?php
 // ERP API using Supabase REST API (No direct PostgreSQL connection needed)
 
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Output something immediately to test if PHP is working
+echo "PHP is running\n";
+
 define('SUPABASE_URL', 'https://kyrxwojoacxscpuyerwk.supabase.co');
 define('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5cnh3b2pvYWN4c2NwdXllcndrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMDY0ODEsImV4cCI6MjA4NjY4MjQ4MX0.QJ8TH7sae0-ISbXr9au89lhAD881IiBTv_o0LApDysU'); // 請使用你的 anon key
 
