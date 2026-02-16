@@ -116,6 +116,10 @@ switch ($request_uri) {
         handlePaymentMethods($method, $input);
         break;
         
+    case 'order_items':
+        handleOrderItems($method, $input);
+        break;
+        
     default:
         http_response_code(404);
         echo json_encode(['error' => 'Endpoint not found']);
@@ -179,6 +183,20 @@ function handleProducts($method, $input) {
             
             $result = supabaseRequest('products', 'PATCH', $updateData, 'id=eq.' . $input['id']);
             echo json_encode(['message' => 'Product updated', 'data' => $result['data']]);
+            break;
+            
+        default:
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+    }
+}
+
+function handleOrderItems($method, $input) {
+    switch ($method) {
+        case 'GET':
+            $query = $_SERVER['QUERY_STRING'] ?? '';
+            $result = supabaseRequest('order_items', 'GET', null, $query);
+            echo json_encode(['data' => $result['data'] ?? []]);
             break;
             
         default:
