@@ -1,13 +1,6 @@
 <?php
 // ERP API using Supabase REST API (No direct PostgreSQL connection needed)
 
-// Enable error reporting for debugging
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
-
-// Output something immediately to test if PHP is working
-echo "PHP is running\n";
-
 define('SUPABASE_URL', 'https://kyrxwojoacxscpuyerwk.supabase.co');
 define('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5cnh3b2pvYWN4c2NwdXllcndrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMDY0ODEsImV4cCI6MjA4NjY4MjQ4MX0.QJ8TH7sae0-ISbXr9au89lhAD881IiBTv_o0LApDysU'); // 請使用你的 anon key
 
@@ -60,7 +53,7 @@ function supabaseRequest($table, $method = 'GET', $data = null, $query = '') {
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $error = curl_error($ch);
-    curl_close($ch);
+    // curl_close($ch); // Deprecated in PHP 8.0+, curl handle is auto-cleanup
     
     if ($error) {
         return ['error' => true, 'message' => $error];
@@ -70,48 +63,22 @@ function supabaseRequest($table, $method = 'GET', $data = null, $query = '') {
 }
 
 // Include modular API handlers (after supabaseRequest is defined)
-$apiFiles = [
-    'api_products.php',
-    'api_customers.php',
-    'api_vendors.php',
-    'api_inventory.php',
-    'api_reports.php',
-    'api_orders.php',
-    'api_payment_methods.php'
-];
-
-foreach ($apiFiles as $file) {
-    $filepath = __DIR__ . '/' . $file;
-    if (!file_exists($filepath)) {
-        http_response_code(500);
-        echo json_encode(['error' => 'API file not found: ' . $file]);
-        exit();
-    }
-    require_once $filepath;
-}
+require_once __DIR__ . '/api_products.php';
+require_once __DIR__ . '/api_customers.php';
+require_once __DIR__ . '/api_vendors.php';
+require_once __DIR__ . '/api_inventory.php';
+require_once __DIR__ . '/api_reports.php';
+require_once __DIR__ . '/api_orders.php';
+require_once __DIR__ . '/api_payment_methods.php';
 
 // Router
 $request_uri = $_SERVER['REQUEST_URI'];
 $method = $_SERVER['REQUEST_METHOD'];
 $request_uri = explode('?', $request_uri)[0];
 $request_uri = str_replace('/api/', '', $request_uri);
-
-// Debug: Log the parsed request URI
-error_log("Request URI: " . $_SERVER['REQUEST_URI']);
-error_log("Parsed URI: " . $request_uri);
-
 $input = json_decode(file_get_contents('php://input'), true);
 
 switch ($request_uri) {
-    case 'debug':
-        echo json_encode([
-            'request_uri' => $_SERVER['REQUEST_URI'],
-            'parsed_uri' => $request_uri,
-            'method' => $method,
-            'files_loaded' => $apiFiles
-        ]);
-        break;
-        
     case 'health':
         // Test Supabase connection
         $result = supabaseRequest('customers', 'GET', null, 'limit=1');
@@ -160,5 +127,5 @@ switch ($request_uri) {
 }
 
 // All API handlers are defined in their respective modular files:
-// api_products.php, api_customers.php, api_vendors.php, api_inventory.php, 
+// api_products.php, api_customers.php, api_vendors.php, api_inventory.php,
 // api_reports.php, api_orders.php, api_payment_methods.php
