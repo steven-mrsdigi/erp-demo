@@ -1,3 +1,6 @@
+<?php
+// Extended API handlers for Vendors, Inventory, and Reports
+
 // Vendor handlers
 function handleVendors($method, $input) {
     switch ($method) {
