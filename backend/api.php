@@ -68,6 +68,7 @@ require_once __DIR__ . '/api_vendors.php';
 require_once __DIR__ . '/api_inventory.php';
 require_once __DIR__ . '/api_reports.php';
 require_once __DIR__ . '/api_orders.php';
+require_once __DIR__ . '/api_payment_methods.php';
 
 // Router
 $request_uri = $_SERVER['REQUEST_URI'];
@@ -111,6 +112,10 @@ switch ($request_uri) {
         handleReports($method, $input);
         break;
         
+    case 'payment-methods':
+        handlePaymentMethods($method, $input);
+        break;
+        
     default:
         http_response_code(404);
         echo json_encode(['error' => 'Endpoint not found']);
@@ -130,18 +135,50 @@ function handleProducts($method, $input) {
                 return;
             }
             
+            $onhandQty = $input['onhand_qty'] ?? $input['stock_quantity'] ?? 0;
+            
             $data = [
                 'sku' => $input['sku'] ?? uniqid('SKU-'),
                 'name' => $input['name'],
                 'description' => $input['description'] ?? '',
                 'price' => $input['price'],
-                'stock_quantity' => $input['stock_quantity'] ?? 0,
+                'stock_quantity' => $onhandQty,
+                'onhand_qty' => $onhandQty,
+                'allocated_qty' => 0,
+                'available_qty' => $onhandQty,
                 'category' => $input['category'] ?? '',
                 'status' => 'active'
             ];
             
             $result = supabaseRequest('products', 'POST', $data);
             echo json_encode(['message' => 'Product created', 'data' => $result['data']]);
+            break;
+            
+        case 'PATCH':
+            if (!isset($input['id'])) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Product ID required']);
+                return;
+            }
+            
+            // Build update data
+            $updateData = [];
+            if (isset($input['name'])) $updateData['name'] = $input['name'];
+            if (isset($input['price'])) $updateData['price'] = $input['price'];
+            if (isset($input['category'])) $updateData['category'] = $input['category'];
+            if (isset($input['description'])) $updateData['description'] = $input['description'];
+            
+            // Handle stock update
+            if (isset($input['onhand_qty'])) {
+                $updateData['onhand_qty'] = $input['onhand_qty'];
+                $updateData['stock_quantity'] = $input['onhand_qty'];
+            } elseif (isset($input['stock_quantity'])) {
+                $updateData['onhand_qty'] = $input['stock_quantity'];
+                $updateData['stock_quantity'] = $input['stock_quantity'];
+            }
+            
+            $result = supabaseRequest('products', 'PATCH', $updateData, 'id=eq.' . $input['id']);
+            echo json_encode(['message' => 'Product updated', 'data' => $result['data']]);
             break;
             
         default:
