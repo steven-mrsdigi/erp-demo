@@ -74,6 +74,7 @@ require_once __DIR__ . '/api_inventory.php';
 require_once __DIR__ . '/api_reports.php';
 require_once __DIR__ . '/api_orders.php';
 require_once __DIR__ . '/api_payment_methods.php';
+require_once __DIR__ . '/api_tax_rates.php';
 
 // Router
 $request_uri = $_SERVER['REQUEST_URI'];
@@ -123,6 +124,10 @@ switch ($request_uri) {
         
     case 'order_items':
         handleOrderItems($method, $input);
+        break;
+        
+    case 'tax-rates':
+        handleTaxRates($method, $input);
         break;
         
     default:

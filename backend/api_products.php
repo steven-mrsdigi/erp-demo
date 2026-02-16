@@ -22,7 +22,7 @@ function handleProducts($method, $input) {
                 'name' => $input['name'],
                 'description' => $input['description'] ?? '',
                 'price' => $input['price'],
-                'tax_rate' => $input['tax_rate'] ?? 0,
+                'tax_rate_id' => $input['tax_rate_id'] ?? null,
                 'stock_quantity' => $onhandQty,
                 'onhand_qty' => $onhandQty,
                 'allocated_qty' => 0,
@@ -46,7 +46,7 @@ function handleProducts($method, $input) {
             $updateData = [];
             if (isset($input['name'])) $updateData['name'] = $input['name'];
             if (isset($input['price'])) $updateData['price'] = $input['price'];
-            if (isset($input['tax_rate'])) $updateData['tax_rate'] = $input['tax_rate'];
+            if (isset($input['tax_rate_id'])) $updateData['tax_rate_id'] = $input['tax_rate_id'];
             if (isset($input['category'])) $updateData['category'] = $input['category'];
             if (isset($input['description'])) $updateData['description'] = $input['description'];
             
