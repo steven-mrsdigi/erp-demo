@@ -181,6 +181,20 @@ function handleOrderUpdate($input) {
     echo json_encode(['message' => 'Order updated']);
 }
 
+function handleOrderItems($method, $input) {
+    switch ($method) {
+        case 'GET':
+            $query = $_SERVER['QUERY_STRING'] ?? '';
+            $result = supabaseRequest('order_items', 'GET', null, $query);
+            echo json_encode(['data' => $result['data'] ?? []]);
+            break;
+            
+        default:
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+    }
+}
+
 function handleOrderCancellation($input) {
     $orderId = $_GET['id'] ?? null;
     if (!$orderId) {

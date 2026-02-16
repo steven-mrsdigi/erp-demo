@@ -63,6 +63,7 @@ function supabaseRequest($table, $method = 'GET', $data = null, $query = '') {
 }
 
 // Include modular API handlers (after supabaseRequest is defined)
+require_once __DIR__ . '/api_products.php';
 require_once __DIR__ . '/api_customers.php';
 require_once __DIR__ . '/api_vendors.php';
 require_once __DIR__ . '/api_inventory.php';
@@ -125,85 +126,6 @@ switch ($request_uri) {
         echo json_encode(['error' => 'Endpoint not found']);
 }
 
-function handleProducts($method, $input) {
-    switch ($method) {
-        case 'GET':
-            $result = supabaseRequest('products', 'GET', null, 'order=created_at.desc');
-            echo json_encode(['data' => $result['data'] ?? []]);
-            break;
-            
-        case 'POST':
-            if (!isset($input['name'], $input['price'])) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Missing required fields']);
-                return;
-            }
-            
-            $onhandQty = $input['onhand_qty'] ?? $input['stock_quantity'] ?? 0;
-            
-            $data = [
-                'sku' => $input['sku'] ?? uniqid('SKU-'),
-                'name' => $input['name'],
-                'description' => $input['description'] ?? '',
-                'price' => $input['price'],
-                'stock_quantity' => $onhandQty,
-                'onhand_qty' => $onhandQty,
-                'allocated_qty' => 0,
-                'available_qty' => $onhandQty,
-                'category' => $input['category'] ?? '',
-                'status' => 'active'
-            ];
-            
-            $result = supabaseRequest('products', 'POST', $data);
-            echo json_encode(['message' => 'Product created', 'data' => $result['data']]);
-            break;
-            
-        case 'PATCH':
-            if (!isset($input['id'])) {
-                http_response_code(400);
-                echo json_encode(['error' => 'Product ID required']);
-                return;
-            }
-            
-            // Build update data
-            $updateData = [];
-            if (isset($input['name'])) $updateData['name'] = $input['name'];
-            if (isset($input['price'])) $updateData['price'] = $input['price'];
-            if (isset($input['category'])) $updateData['category'] = $input['category'];
-            if (isset($input['description'])) $updateData['description'] = $input['description'];
-            
-            // Handle stock update
-            if (isset($input['onhand_qty'])) {
-                $updateData['onhand_qty'] = $input['onhand_qty'];
-                $updateData['stock_quantity'] = $input['onhand_qty'];
-            } elseif (isset($input['stock_quantity'])) {
-                $updateData['onhand_qty'] = $input['stock_quantity'];
-                $updateData['stock_quantity'] = $input['stock_quantity'];
-            }
-            
-            $result = supabaseRequest('products', 'PATCH', $updateData, 'id=eq.' . $input['id']);
-            echo json_encode(['message' => 'Product updated', 'data' => $result['data']]);
-            break;
-            
-        default:
-            http_response_code(405);
-            echo json_encode(['error' => 'Method not allowed']);
-    }
-}
-
-function handleOrderItems($method, $input) {
-    switch ($method) {
-        case 'GET':
-            $query = $_SERVER['QUERY_STRING'] ?? '';
-            $result = supabaseRequest('order_items', 'GET', null, $query);
-            echo json_encode(['data' => $result['data'] ?? []]);
-            break;
-            
-        default:
-            http_response_code(405);
-            echo json_encode(['error' => 'Method not allowed']);
-    }
-}
-
 // All API handlers are defined in their respective modular files:
-// api_customers.php, api_vendors.php, api_inventory.php, api_reports.php, api_orders.php
+// api_products.php, api_customers.php, api_vendors.php, api_inventory.php, 
+// api_reports.php, api_orders.php, api_payment_methods.php
