@@ -63,22 +63,48 @@ function supabaseRequest($table, $method = 'GET', $data = null, $query = '') {
 }
 
 // Include modular API handlers (after supabaseRequest is defined)
-require_once __DIR__ . '/api_products.php';
-require_once __DIR__ . '/api_customers.php';
-require_once __DIR__ . '/api_vendors.php';
-require_once __DIR__ . '/api_inventory.php';
-require_once __DIR__ . '/api_reports.php';
-require_once __DIR__ . '/api_orders.php';
-require_once __DIR__ . '/api_payment_methods.php';
+$apiFiles = [
+    'api_products.php',
+    'api_customers.php',
+    'api_vendors.php',
+    'api_inventory.php',
+    'api_reports.php',
+    'api_orders.php',
+    'api_payment_methods.php'
+];
+
+foreach ($apiFiles as $file) {
+    $filepath = __DIR__ . '/' . $file;
+    if (!file_exists($filepath)) {
+        http_response_code(500);
+        echo json_encode(['error' => 'API file not found: ' . $file]);
+        exit();
+    }
+    require_once $filepath;
+}
 
 // Router
 $request_uri = $_SERVER['REQUEST_URI'];
 $method = $_SERVER['REQUEST_METHOD'];
 $request_uri = explode('?', $request_uri)[0];
 $request_uri = str_replace('/api/', '', $request_uri);
+
+// Debug: Log the parsed request URI
+error_log("Request URI: " . $_SERVER['REQUEST_URI']);
+error_log("Parsed URI: " . $request_uri);
+
 $input = json_decode(file_get_contents('php://input'), true);
 
 switch ($request_uri) {
+    case 'debug':
+        echo json_encode([
+            'request_uri' => $_SERVER['REQUEST_URI'],
+            'parsed_uri' => $request_uri,
+            'method' => $method,
+            'files_loaded' => $apiFiles
+        ]);
+        break;
+        
     case 'health':
         // Test Supabase connection
         $result = supabaseRequest('customers', 'GET', null, 'limit=1');
