@@ -1,0 +1,58 @@
+<?php
+// Inventory API handlers
+
+function handleInventory($method, $input) {
+    switch ($method) {
+        case 'GET':
+            // Get recent movements
+            $movements = supabaseRequest('inventory_movements', 'GET', null, 'order=created_at.desc&limit=50');
+            
+            // Get current stock from products
+            $products = supabaseRequest('products', 'GET', null, 'select=id,name,sku,stock_quantity&status=eq.active&order=name.asc');
+            
+            // Calculate totals for each product
+            $stockData = [];
+            foreach ($products['data'] ?? [] as $product) {
+                $stockData[] = [
+                    'id' => $product['id'],
+                    'name' => $product['name'],
+                    'sku' => $product['sku'],
+                    'stock_quantity' => $product['stock_quantity'],
+                    'total_in' => 0,
+                    'total_out' => 0
+                ];
+            }
+            
+            echo json_encode([
+                'movements' => $movements['data'] ?? [],
+                'stock' => $stockData
+            ]);
+            break;
+            
+        case 'POST':
+            $data = [
+                'product_id' => $input['product_id'],
+                'type' => $input['type'],
+                'quantity' => $input['quantity'],
+                'unit_cost' => $input['unit_cost'] ?? 0,
+                'total_cost' => ($input['quantity'] ?? 0) * ($input['unit_cost'] ?? 0),
+                'reference_type' => $input['reference_type'] ?? '',
+                'notes' => $input['notes'] ?? ''
+            ];
+            
+            $result = supabaseRequest('inventory_movements', 'POST', $data);
+            
+            // Update product stock
+            $adjustment = ($input['type'] === 'in') ? $input['quantity'] : -$input['quantity'];
+            supabaseRequest('products', 'PATCH', [
+                'stock_quantity' => ['increment' => $adjustment]
+            ], 'id=eq.' . $input['product_id']);
+            
+            echo json_encode(['message' => 'Inventory updated', 'data' => $result['data']]);
+            break;
+            
+        default:
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+    }
+}
