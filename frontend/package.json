@@ -2,11 +2,11 @@
   "name": "erp-frontend",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
-    "serve": "vue-cli-service serve",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint",
-    "dev": "vite"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "@mdi/font": "^7.3.67",
