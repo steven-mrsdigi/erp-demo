@@ -66,6 +66,27 @@ function handleProducts($method, $input) {
             echo json_encode(['message' => 'Product updated', 'data' => $result['data']]);
             break;
             
+        case 'DELETE':
+            $id = $_GET['id'] ?? null;
+            if (!$id) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Product ID required']);
+                return;
+            }
+            
+            // Check if product is used in any orders
+            $orderItems = supabaseRequest('order_items', 'GET', null, 'product_id=eq.' . $id . '&limit=1');
+            if (!empty($orderItems['data'])) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Cannot delete product that has been used in orders']);
+                return;
+            }
+            
+            // Delete the product
+            supabaseRequest('products', 'DELETE', null, 'id=eq.' . $id);
+            echo json_encode(['message' => 'Product deleted']);
+            break;
+            
         default:
             http_response_code(405);
             echo json_encode(['error' => 'Method not allowed']);
