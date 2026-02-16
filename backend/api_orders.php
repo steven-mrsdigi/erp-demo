@@ -5,7 +5,14 @@ function handleOrders($method, $input) {
     switch ($method) {
         case 'GET':
             $result = supabaseRequest('orders', 'GET', null, 'order=created_at.desc&select=*,customers(name)');
-            echo json_encode(['data' => $result['data'] ?? []]);
+            // Flatten nested customer object to customer_name field
+            $orders = [];
+            foreach ($result['data'] ?? [] as $order) {
+                $order['customer_name'] = $order['customers']['name'] ?? 'Unknown Customer';
+                unset($order['customers']); // Remove nested object
+                $orders[] = $order;
+            }
+            echo json_encode(['data' => $orders]);
             break;
             
         case 'POST':
