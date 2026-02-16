@@ -4,7 +4,10 @@
 function handleVendors($method, $input) {
     switch ($method) {
         case 'GET':
-            $result = supabaseRequest('vendors', 'GET', null, 'order=name.asc');
+            $sortField = $_GET['sort'] ?? 'name';
+            $sortOrder = $_GET['order'] ?? 'asc';
+            $query = "order=" . $sortField . "." . $sortOrder;
+            $result = supabaseRequest('vendors', 'GET', null, $query);
             echo json_encode(['data' => $result['data'] ?? []]);
             break;
             

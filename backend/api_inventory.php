@@ -4,11 +4,15 @@
 function handleInventory($method, $input) {
     switch ($method) {
         case 'GET':
+            $sortField = $_GET['sort'] ?? 'name';
+            $sortOrder = $_GET['order'] ?? 'asc';
+            
             // Get recent movements
             $movements = supabaseRequest('inventory_movements', 'GET', null, 'order=created_at.desc&limit=50');
             
             // Get current stock from products (using onhand_qty as the real stock)
-            $products = supabaseRequest('products', 'GET', null, 'select=id,name,sku,onhand_qty,allocated_qty,available_qty&status=eq.active&order=name.asc');
+            $query = 'select=id,name,sku,onhand_qty,allocated_qty,available_qty&status=eq.active&order=' . $sortField . '.' . $sortOrder;
+            $products = supabaseRequest('products', 'GET', null, $query);
             
             // Calculate totals for each product
             $stockData = [];

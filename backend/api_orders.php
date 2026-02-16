@@ -4,7 +4,10 @@
 function handleOrders($method, $input) {
     switch ($method) {
         case 'GET':
-            $result = supabaseRequest('orders', 'GET', null, 'order=created_at.desc&select=*,customers(name)');
+            $sortField = $_GET['sort'] ?? 'created_at';
+            $sortOrder = $_GET['order'] ?? 'desc';
+            $query = "order=" . $sortField . "." . $sortOrder . "&select=*,customers(name)";
+            $result = supabaseRequest('orders', 'GET', null, $query);
             $orders = [];
             foreach ($result['data'] ?? [] as $order) {
                 $order['customer_name'] = $order['customers']['name'] ?? 'Unknown Customer';

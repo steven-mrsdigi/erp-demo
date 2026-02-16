@@ -4,7 +4,10 @@
 function handleProducts($method, $input) {
     switch ($method) {
         case 'GET':
-            $result = supabaseRequest('products', 'GET', null, 'order=created_at.desc');
+            $sortField = $_GET['sort'] ?? 'created_at';
+            $sortOrder = $_GET['order'] ?? 'desc';
+            $query = "order=" . $sortField . "." . $sortOrder;
+            $result = supabaseRequest('products', 'GET', null, $query);
             echo json_encode(['data' => $result['data'] ?? []]);
             break;
             
