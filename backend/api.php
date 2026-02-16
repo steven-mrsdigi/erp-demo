@@ -10,6 +10,10 @@ header('Access-Control-Allow-Methods: GET, POST, PUT, PATCH, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization, apikey');
 header('Content-Type: application/json; charset=utf-8');
 
+// Enable PHP error logging
+ini_set('log_errors', 1);
+ini_set('error_log', '/tmp/php_errors.log');
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
     exit();
