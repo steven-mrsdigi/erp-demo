@@ -1,10 +1,5 @@
 <?php
 // ERP API using Supabase REST API (No direct PostgreSQL connection needed)
-// Include modular API handlers
-require_once __DIR__ . '/api_customers.php';
-require_once __DIR__ . '/api_vendors.php';
-require_once __DIR__ . '/api_inventory.php';
-require_once __DIR__ . '/api_reports.php';
 
 define('SUPABASE_URL', 'https://kyrxwojoacxscpuyerwk.supabase.co');
 define('SUPABASE_KEY', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt5cnh3b2pvYWN4c2NwdXllcndrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzExMDY0ODEsImV4cCI6MjA4NjY4MjQ4MX0.QJ8TH7sae0-ISbXr9au89lhAD881IiBTv_o0LApDysU'); // 請使用你的 anon key
@@ -66,6 +61,12 @@ function supabaseRequest($table, $method = 'GET', $data = null, $query = '') {
     
     return ['code' => $httpCode, 'data' => json_decode($response, true)];
 }
+
+// Include modular API handlers (after supabaseRequest is defined)
+require_once __DIR__ . '/api_customers.php';
+require_once __DIR__ . '/api_vendors.php';
+require_once __DIR__ . '/api_inventory.php';
+require_once __DIR__ . '/api_reports.php';
 
 // Router
 $request_uri = $_SERVER['REQUEST_URI'];
