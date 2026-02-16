@@ -58,10 +58,15 @@ function handleOrders($method, $input) {
                     ];
                     supabaseRequest('order_items', 'POST', $itemData);
                     
-                    // Allocate inventory: allocated_qty += quantity
-                    $product = supabaseRequest('products', 'GET', null, 'id=eq.' . $item['product_id'] . '&select=allocated_qty');
-                    $newAllocated = ($product['data'][0]['allocated_qty'] ?? 0) + $item['quantity'];
-                    supabaseRequest('products', 'PATCH', ['allocated_qty' => $newAllocated], 'id=eq.' . $item['product_id']);
+                    // Allocate inventory: allocated_qty += quantity, available_qty = onhand_qty - allocated_qty
+                    $product = supabaseRequest('products', 'GET', null, 'id=eq.' . $item['product_id'] . '&select=onhand_qty,allocated_qty');
+                    $onhand = $product['data'][0]['onhand_qty'] ?? 0;
+                    $allocated = ($product['data'][0]['allocated_qty'] ?? 0) + $item['quantity'];
+                    $available = $onhand - $allocated;
+                    supabaseRequest('products', 'PATCH', [
+                        'allocated_qty' => $allocated,
+                        'available_qty' => $available
+                    ], 'id=eq.' . $item['product_id']);
                 }
                 
                 echo json_encode(['message' => 'Order created', 'id' => $orderId]);
@@ -115,9 +120,13 @@ function handlePayment($input) {
         $allocated = $product['data'][0]['allocated_qty'] ?? 0;
         
         // Update: onhand_qty -= quantity, allocated_qty -= quantity
+        $newOnhand = $onhand - $quantity;
+        $newAllocated = $allocated - $quantity;
+        $newAvailable = $newOnhand - $newAllocated;
         supabaseRequest('products', 'PATCH', [
-            'onhand_qty' => $onhand - $quantity,
-            'allocated_qty' => $allocated - $quantity
+            'onhand_qty' => $newOnhand,
+            'allocated_qty' => $newAllocated,
+            'available_qty' => $newAvailable
         ], 'id=eq.' . $productId);
     }
     
@@ -147,9 +156,14 @@ function handleOrderUpdate($input) {
     // Release old allocations
     $oldItems = supabaseRequest('order_items', 'GET', null, 'order_id=eq.' . $orderId);
     foreach ($oldItems['data'] ?? [] as $oldItem) {
-        $product = supabaseRequest('products', 'GET', null, 'id=eq.' . $oldItem['product_id'] . '&select=allocated_qty');
-        $newAllocated = ($product['data'][0]['allocated_qty'] ?? 0) - $oldItem['quantity'];
-        supabaseRequest('products', 'PATCH', ['allocated_qty' => max(0, $newAllocated)], 'id=eq.' . $oldItem['product_id']);
+        $product = supabaseRequest('products', 'GET', null, 'id=eq.' . $oldItem['product_id'] . '&select=onhand_qty,allocated_qty');
+        $onhand = $product['data'][0]['onhand_qty'] ?? 0;
+        $newAllocated = max(0, ($product['data'][0]['allocated_qty'] ?? 0) - $oldItem['quantity']);
+        $newAvailable = $onhand - $newAllocated;
+        supabaseRequest('products', 'PATCH', [
+            'allocated_qty' => $newAllocated,
+            'available_qty' => $newAvailable
+        ], 'id=eq.' . $oldItem['product_id']);
     }
     
     // Delete old items
@@ -167,9 +181,14 @@ function handleOrderUpdate($input) {
         supabaseRequest('order_items', 'POST', $itemData);
         
         // Allocate new quantity
-        $product = supabaseRequest('products', 'GET', null, 'id=eq.' . $item['product_id'] . '&select=allocated_qty');
+        $product = supabaseRequest('products', 'GET', null, 'id=eq.' . $item['product_id'] . '&select=onhand_qty,allocated_qty');
+        $onhand = $product['data'][0]['onhand_qty'] ?? 0;
         $newAllocated = ($product['data'][0]['allocated_qty'] ?? 0) + $item['quantity'];
-        supabaseRequest('products', 'PATCH', ['allocated_qty' => $newAllocated], 'id=eq.' . $item['product_id']);
+        $newAvailable = $onhand - $newAllocated;
+        supabaseRequest('products', 'PATCH', [
+            'allocated_qty' => $newAllocated,
+            'available_qty' => $newAvailable
+        ], 'id=eq.' . $item['product_id']);
     }
     
     // Update order total
@@ -220,13 +239,19 @@ function handleOrderCancellation($input) {
         
         if ($isPaid) {
             // If paid, restore onhand_qty
+            $newOnhand = $onhand + $quantity;
+            $newAvailable = $newOnhand - $allocated;
             supabaseRequest('products', 'PATCH', [
-                'onhand_qty' => $onhand + $quantity
+                'onhand_qty' => $newOnhand,
+                'available_qty' => $newAvailable
             ], 'id=eq.' . $productId);
         } else {
             // If not paid, just release allocation
+            $newAllocated = max(0, $allocated - $quantity);
+            $newAvailable = $onhand - $newAllocated;
             supabaseRequest('products', 'PATCH', [
-                'allocated_qty' => max(0, $allocated - $quantity)
+                'allocated_qty' => $newAllocated,
+                'available_qty' => $newAvailable
             ], 'id=eq.' . $productId);
         }
     }
