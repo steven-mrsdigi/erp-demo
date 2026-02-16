@@ -67,7 +67,11 @@ function handleProducts($method, $input) {
             break;
             
         case 'DELETE':
-            $id = $_GET['id'] ?? null;
+            // Get ID from query string
+            $queryString = $_SERVER['QUERY_STRING'] ?? '';
+            parse_str($queryString, $queryParams);
+            $id = $queryParams['id'] ?? null;
+            
             if (!$id) {
                 http_response_code(400);
                 echo json_encode(['error' => 'Product ID required']);
