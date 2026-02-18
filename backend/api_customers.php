@@ -49,7 +49,28 @@ function handleCustomers($method, $input) {
             $result = supabaseRequest('customers', 'PATCH', $updateData, 'id=eq.' . $input['id']);
             echo json_encode(['message' => 'Customer updated', 'data' => $result['data']]);
             break;
+        
+        case 'DELETE':
+            $id = $_GET['id'] ?? $input['id'] ?? null;
+            if (!$id) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Customer ID required']);
+                return;
+            }
             
+            // Check if customer is used in any orders
+            $orders = supabaseRequest('orders', 'GET', null, 'customer_id=eq.' . $id . '&limit=1');
+            if (!empty($orders['data'])) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Cannot delete customer that has been used in orders']);
+                return;
+            }
+            
+            // Delete the customer
+            supabaseRequest('customers', 'DELETE', null, 'id=eq.' . $id);
+            echo json_encode(['message' => 'Customer deleted']);
+            break;
+        
         default:
             http_response_code(405);
             echo json_encode(['error' => 'Method not allowed']);
